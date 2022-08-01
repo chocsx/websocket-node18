@@ -34,7 +34,15 @@ function onSocketReadable(socket) {
 
   const maskKey = socket.read(MASK_KEY_BYTES_LENGTH)
   const encoded = socket.read(messageLength)
-  console.log()
+  const decoded = unmask(encoded, maskKey)
+}
+
+function unmask(encodedBuffer, maskKey) {
+  var finalBuffer = Buffer.from(encodedBuffer);
+
+  for (const index in encodedBuffer) {
+    finalBuffer[index] = encodedBuffer[index] ^ maskKey[index % 4]
+  }
 }
 
 function onSocketUpgrade(req, socket, hand){
@@ -45,6 +53,7 @@ function onSocketUpgrade(req, socket, hand){
   socket.write(headers);
   socket.on('readable', () => onSocketReadable(socket))
 }
+
 
 function prepareHandShakeHeaders(id) {
   const acceptKey = createSocketAccecpt(id)
