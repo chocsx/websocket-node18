@@ -43,6 +43,8 @@ function unmask(encodedBuffer, maskKey) {
   for (const index in encodedBuffer) {
     finalBuffer[index] = encodedBuffer[index] ^ maskKey[index % 4]
   }
+
+  return finalBuffer
 }
 
 function onSocketUpgrade(req, socket, hand){
