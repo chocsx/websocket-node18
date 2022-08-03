@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebSocket Client</title>
 </head>
+
 <body>
   <p>Messages: </p>
   <output id="messages"></output>
@@ -17,17 +19,38 @@
       console.log('WebSocket is connected!')
       const id = Math.round(Math.random() * 100)
       console.log('sending...', id)
-      const data = JSON.stringify({
-        id,
-        name: `[${id}] Mateus`,
-        address: {
-          street: 'my street',
-          number: 20 * id
-        },
-        profession: 'developer'
-      })
+      const intervalID = setInterval(() => {
+        const data = JSON.stringify([{
+          id,
+          name: `[${id}] Mateus`,
+          address: {
+            street: 'my street',
+            number: 20 * id
+          },
+          profession: 'developer'
+        }, {
+          id,
+          name: `[${id}] Mauricio`,
+          address: {
+            street: 'my avenue',
+            number: 20 * id
+          },
+          profession: 'Solana Minter'
+        }, {
+          id,
+          name: `[${id}] Luan`,
+          address: {
+            street: 'my neighborhood',
+            number: 20 * id
+          },
+          profession: 'web3 developer'
+        }])
+        socket.send(data)
+      }, 1000)
 
-      socket.send(data)
+      setTimeout(() => {
+        clearInterval(intervalID)
+      }, 5000)
     }
     socket.onmessage = (msg) => {
       const message = msg.data
@@ -38,4 +61,5 @@
     socket.onclose = (event) => console.log('disconnected from websocket server')
   </script>
 </body>
+
 </html>
