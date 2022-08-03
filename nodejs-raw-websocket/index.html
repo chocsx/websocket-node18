@@ -7,6 +7,7 @@
   <title>WebSocket Client</title>
 </head>
 <body>
+  <p>Messages: </p>
   <output id="messages"></output>
   <script>
     const messages = document.getElementById('messages');
@@ -28,7 +29,11 @@
 
       socket.send(data)
     }
-    socket.onmessage = (msg) => console.log('I got a message', msg)
+    socket.onmessage = (msg) => {
+      const message = msg.data
+      console.log('I got a message', message)
+      messages.innerHTML += `<br /> ${message}`
+    }
     socket.onerror = (error) => console.log(`Web Socket error`, error)
     socket.onclose = (event) => console.log('disconnected from websocket server')
   </script>

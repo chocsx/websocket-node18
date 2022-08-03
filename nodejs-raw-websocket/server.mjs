@@ -8,6 +8,7 @@ const SEVEN_BITS_INTEGER_MARKER = 125
 const SIXTEEN_BITS_INTEGER_MARKER = 126
 const SIXTYFOUR_BITS_INTEGER_MARKER = 127
 const MASK_KEY_BYTES_LENGTH = 4
+const OPCODE_TEXT = 0x01 // 1 bit in binary 1
 
 const FIRST_BIT = 128
 
@@ -39,6 +40,9 @@ function onSocketReadable(socket) {
 
   const data = JSON.parse(received)
   console.log('message received!', data)
+
+  const msg = JSON.stringify(data)
+  sendMessage(msg, socket)
 }
 
 function unmask(encodedBuffer, maskKey) {
@@ -52,6 +56,7 @@ function unmask(encodedBuffer, maskKey) {
     finalBuffer[index] = encodedBuffer[index] ^ maskKey[index % 4]
 
     const logger = {
+      unmaskingCalc: `${toBinary(encodedBuffer[index])} ^ ${toBinary(maskKey[index % MASK_KEY_BYTES_LENGTH])} = ${toBinary(finalBuffer[index])}`,
       decoded: getCharFromBinary(finalBuffer[index])
     }
     console.log(logger)
@@ -67,8 +72,47 @@ function onSocketUpgrade(req, socket, hand){
 
   socket.write(headers);
   socket.on('readable', () => onSocketReadable(socket))
+
 }
 
+function sendMessage(msg, socket) {
+  const dataFrameBuffer = prepareMessage(msg)
+  socket.write(dataFrameBuffer)
+}
+
+function prepareMessage(message) {
+  const msg = Buffer.from(message)
+  const messageSize = msg.length
+
+  let dataFrameBuffer;
+  let offset = 2
+
+
+  const firstByte = 0x80 | OPCODE_TEXT
+
+  if(messageSize <= SEVEN_BITS_INTEGER_MARKER) {
+    const bytes = [firstByte]
+    dataFrameBuffer = Buffer.from(bytes.concat(messageSize))
+  } else {
+    throw new Error ('message to long buddy! ')
+  }
+
+  const totalLength = dataFrameBuffer.byteLength + messageSize
+  const dataFrameResponse = concat([dataFrameBuffer, msg], totalLength)
+
+  return dataFrameResponse
+}
+
+function concat(bufferList, totalLength) {
+  const target = Buffer.allocUnsafe(totalLength)
+  let offset = 0;
+  for(const buffer of bufferList) {
+    target.set(buffer, offset)
+    offset += buffer.length
+  }
+
+  return target
+}
 
 function prepareHandShakeHeaders(id) {
   const acceptKey = createSocketAccept(id)
