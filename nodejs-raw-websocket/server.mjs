@@ -1,4 +1,4 @@
-import { createServer } from 'node:http'
+import { createServer } from 'http'
 import crypto from 'crypto'
 
 
@@ -12,12 +12,12 @@ const MASK_KEY_BYTES_LENGTH = 4
 const FIRST_BIT = 128
 
 const server = createServer((request, response) => {
-    response.writeHead(200)
-    response.end('hey there')
-  })
-  .listen(1337, () => console.log('server is listening to', PORT))
+  response.writeHead(200)
+  response.end('hey there')
+})
+.listen(1337, () => console.log('server listening to', PORT))
 
-  server.on('upgrade', onSocketUpgrade)
+server.on('upgrade', onSocketUpgrade)
 
 function onSocketReadable(socket) {
   socket.read(1)
@@ -35,13 +35,26 @@ function onSocketReadable(socket) {
   const maskKey = socket.read(MASK_KEY_BYTES_LENGTH)
   const encoded = socket.read(messageLength)
   const decoded = unmask(encoded, maskKey)
+  const received = decoded.toString('utf8')
+
+  const data = JSON.parse(received)
+  console.log('message received!', data)
 }
 
 function unmask(encodedBuffer, maskKey) {
   var finalBuffer = Buffer.from(encodedBuffer);
 
-  for (const index in encodedBuffer) {
+  const fillWithEightZeros = (t) => t.padStart(8, "0")
+  const toBinary = (t) => t.toString(2)
+  const fromBinaryToDecimal = (t) => parseInt(toBinary(t), 2)
+  const getCharFromBinary = (t) => String.fromCharCode(fromBinaryToDecimal(t))
+  for (let index = 0; index < encodedBuffer.length; index++) {
     finalBuffer[index] = encodedBuffer[index] ^ maskKey[index % 4]
+
+    const logger = {
+      decoded: getCharFromBinary(finalBuffer[index])
+    }
+    console.log(logger)
   }
 
   return finalBuffer
@@ -58,7 +71,7 @@ function onSocketUpgrade(req, socket, hand){
 
 
 function prepareHandShakeHeaders(id) {
-  const acceptKey = createSocketAccecpt(id)
+  const acceptKey = createSocketAccept(id)
   const headers = [
     'HTTP/1.1 101 Switching Protocols',
     'Upgrade: websocket',
@@ -69,17 +82,20 @@ function prepareHandShakeHeaders(id) {
   return headers
 }
 
-function createSocketAccecpt(id) {
+function createSocketAccept(id) {
   const shaum = crypto.createHash('sha1')
   shaum.update(id + WEBSOCKET_MAGIC_STRING_KEY)
   return shaum.digest('base64')
 }
+
+// error handling to keep the server on
 ;
 [
   "uncaughtException",
   "unhandledRejection"
-].forEach(event => 
+].forEach(event =>
   process.on(event, (err) => {
-    console.error(`ferrou mane: ${event}, msg: ${err.stack || err }`)
+    console.error(`something bad happened! event: ${event}, msg: ${err.stack || err}`)
   })
+
 )
